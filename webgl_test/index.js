@@ -14,86 +14,8 @@ const KEY_R_LEFT = 37;
 const KEY_R_DOWN = 40;
 const KEY_R_RIGHT = 39;
 
-
-
-class Mesh {
-    constructor() {
-        this.points = [];
-        this.triangles = [];
-    }
-    _getP(id) {
-        for (let p of this.points) {
-            if (p.id == id) return p;
-        }
-        throw new Error("p " + id + " net gefunden :(");
-    }
-    buidLalalalalaArray() {
-        let arr = [];
-        for (let t of this.triangles) {
-            let p1 = this._getP(t.p1);
-            let p2 = this._getP(t.p2);
-            let p3 = this._getP(t.p3);
-            this._pushVertex(arr,t,p1);
-            this._pushVertex(arr,t,p2);
-            this._pushVertex(arr,t,p3);
-        }
-        return new Float32Array(arr);
-    }
-    _pushVertex(arr, t, p) {
-        arr.push(p.pos[0]);//jaaaaa
-        arr.push(p.pos[1]);
-        arr.push(p.pos[2]);
-        if (t.color === undefined) {
-            arr.push(p.color[0]);
-            arr.push(p.color[1]);
-            arr.push(p.color[2]);
-        } else {
-            arr.push(t.color[0]);
-            arr.push(t.color[1]);
-            arr.push(t.color[2]);
-        }
-    }
-    static loadObj(objStr) {
-        let ret = new Mesh();
-        let lines = objStr.split("\n");
-        let pId = 1;
-        let fId = 1;
-        for (let l of lines) {
-            if (l == "" || l.startsWith("#")) continue;
-            let wds = l.split(" ");
-            switch (wds[0]) {
-                case "v":
-                    ret.points.push(new MeshPoint(pId++,[wds[1]*1,wds[2]*1,wds[3]*1],[Math.random(),Math.random(),Math.random()]));
-                    break;
-                case "f":
-                    ret.triangles.push(new MeshTriangle(fId++, wds[1].split("/")[0] ,wds[2].split("/")[0] ,wds[3].split("/")[0] ,undefined));
-                    break;
-                case "default":
- //                   console.log("ignored: " + l);
-            }
-        }
-        return ret;
-    }
-}
-
-
-class MeshPoint {
-    constructor(id, pos, color) {
-        this.pos = pos;
-        this.color = color;
-        this.id = id;
-    }
-}
-
-
-class MeshTriangle {
-    constructor(id, p1, p2 ,p3, color) {
-        this.p1 = p1;//id of point1
-        this.p2 = p2;//id of point2
-        this.p3 = p3;//id of point3
-        this.color = color;// undefined: use vertex colors
-    }
-}
+const TEXTURE = new Image();
+TEXTURE.src = "textorus.png";
 
 
 class Cam {
@@ -159,7 +81,7 @@ MSH.triangles.push(new MeshTriangle("6", "C","D","F",undefined));
 MSH.triangles.push(new MeshTriangle("7", "D","E","F",undefined));
 MSH.triangles.push(new MeshTriangle("8", "E","B","F",undefined));*/
 
-const TRI_VTX = MSH.buidLalalalalaArray();
+const TRI_VTX = MSH.buildArray(Mesh.PUSH_X_Y_Z_TX_TY_TZ);
 
 /*const TRI_VTX = [
         0.0, 0.0, 1.0,     0.0,0.0,1.0,//
@@ -199,32 +121,6 @@ let mProj = new Float32Array(16);
 //glMatrix.mat4.perspective(mProj, 45, 1, 10, 1000);
 
 let cam = new Cam();
-
-const V_SHADER = `
-precision mediump float;\n
-attribute vec3 vertPosition;\n
-attribute vec3 vertColor;\n
-uniform mat4 mWorld;\n
-uniform mat4 mView;\n
-uniform mat4 mProj;\n
-
-varying vec3 fragColor;\n
-void main() {\n
-    fragColor = vertColor;
-    gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);\n
-}\n
-
-
-`;
-
-const F_SHADER = `
-precision mediump float;\n
-varying vec3 fragColor;\n
-void main() {\n
-    gl_FragColor = vec4(fragColor, 1.0);\n
-}\n
-
-`;
 
 onload = function() {
     let canvas = document.getElementById("canv");
@@ -289,20 +185,26 @@ onload = function() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(TRI_VTX), gl.STATIC_DRAW);
     
     let posAttribLocation = gl.getAttribLocation(program, 'vertPosition');
-    let posAttribColor = gl.getAttribLocation(program, 'vertColor');
+    let posAttribTexCoord = gl.getAttribLocation(program, 'vertTexCoord');
     
-    gl.vertexAttribPointer(posAttribLocation, 3, gl.FLOAT, gl.FALSE, 6*Float32Array.BYTES_PER_ELEMENT, 0);
-    gl.vertexAttribPointer(posAttribColor, 3, gl.FLOAT, gl.FALSE, 6*Float32Array.BYTES_PER_ELEMENT, 3*Float32Array.BYTES_PER_ELEMENT);
+    gl.vertexAttribPointer(posAttribLocation, 3, gl.FLOAT, gl.FALSE, 5*Float32Array.BYTES_PER_ELEMENT, 0);
+    gl.vertexAttribPointer(posAttribTexCoord, 2, gl.FLOAT, gl.FALSE, 5*Float32Array.BYTES_PER_ELEMENT, 3*Float32Array.BYTES_PER_ELEMENT);
     
     gl.enableVertexAttribArray(posAttribLocation);
-    gl.enableVertexAttribArray(posAttribColor);
+    gl.enableVertexAttribArray(posAttribTexCoord);
 
     let mWorldUniformLocation = gl.getUniformLocation(program,"mWorld");
     let mViewUniformLocation = gl.getUniformLocation(program,"mView");
     let mProjUniformLocation = gl.getUniformLocation(program,"mProj");
 
-
-    
+    let boxTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, boxTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, TEXTURE);
+                  
     let loop = function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -321,7 +223,7 @@ onload = function() {
         gl.uniformMatrix4fv(mWorldUniformLocation, gl.FALSE, mWorld);
         gl.uniformMatrix4fv(mViewUniformLocation, gl.FALSE, mView);
         gl.uniformMatrix4fv(mProjUniformLocation, gl.FALSE, mProj);
-        gl.drawArrays(gl.TRIANGLES, 0, TRI_VTX.length/6);// 0 skip, 3*8 vertexes
+        gl.drawArrays(gl.TRIANGLES, 0, TRI_VTX.length/5);// 0 skip, 3*8 vertexes
         
         requestAnimationFrame(loop);
     };
