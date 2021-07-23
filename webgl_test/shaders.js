@@ -13,9 +13,10 @@ uniform mat4 mProj;\n
 varying vec2 fragTexCoord;\n
 
 void main() {\n
-//    fragColor = vertColor;
-//    fragNormale = vertNormale;
-    fragTexCoord = vertTexCoord;
+//    fragColor = vertColor;\n
+//    fragNormale = vertNormale;\n
+    fragTexCoord = vertTexCoord;\n
+    fragTexCoord.y = 1.0 - fragTexCoord.y;\n
     gl_Position = mProj * mView * mWorld * vec4(vertPosition, 1.0);\n
 }\n
 
@@ -34,7 +35,7 @@ varying vec2 fragTexCoord;\n
 uniform sampler2D sampler;\n
 void main() {\n
     // gl_FragColor = vec4(fragColor, 1.0);\n
-    gl_FragColor = texture2D(sampler, fragTexCoord);
+    gl_FragColor = texture2D(sampler, fragTexCoord);\n
 }\n
 
 `;

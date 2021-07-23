@@ -1,6 +1,6 @@
 // code geklaut von https://www.youtube.com/playlist?list=PLjcVFFANLS5zH_PeKC6I8p0Pt1hzph_rt
-const SPEED = 0.2;
-const R_SPEED = 0.01;
+const SPEED = 0.05;
+const R_SPEED = 0.2;
 const RM_SPEED = 0.002;
 
 const KEY_FWD = 87;
@@ -13,6 +13,7 @@ const KEY_R_UP = 38;
 const KEY_R_LEFT = 37;
 const KEY_R_DOWN = 40;
 const KEY_R_RIGHT = 39;
+const KEY_ZOOM = 67;
 
 const TEXTURE = new Image();
 TEXTURE.src = "landschaft.png";
@@ -21,7 +22,9 @@ TEXTURE.src = "landschaft.png";
 class Cam {
     constructor() {
         this.pos = new Float32Array([0,0,5,1]);
-        this.ang1 = Math.PI;
+        this.base = new Float32Array(16);
+        glMatrix.mat4.identity(this.base);
+        this.ang1 = 0;
         this.ang2 = 0;
         this.ang3 = 0;
         this.matrix = new Float32Array(16);
@@ -38,7 +41,7 @@ class Cam {
     }
     
     ctrlMove(distanceRight,distanceUp,distanceFwd) {
-        glMatrix.mat4.identity(this.matInternal);
+        glMatrix.mat4.copy(this.matInternal,this.base);
         glMatrix.mat4.rotateY(this.matInternal,this.matInternal, this.ang1);
         let iiii = new Float32Array(4);
         glMatrix.vec4.transformMat4(iiii, [distanceRight,distanceUp,distanceFwd,1.0], this.matInternal);
@@ -209,7 +212,7 @@ onload = function() {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         gl.viewport(0,0,window.innerWidth,window.innerHeight);
-        glMatrix.mat4.perspective(mProj, 45, window.innerWidth/window.innerHeight, 0.01, 1000);
+        glMatrix.mat4.perspective(mProj, isKeyPressed(KEY_ZOOM) ? 5/180*Math.PI : 60/180*Math.PI, window.innerWidth/window.innerHeight, 0.01, 1000);
 
         
         gl.clearColor(0.5,0.6,0.9, 1.0);
@@ -223,7 +226,8 @@ onload = function() {
         gl.uniformMatrix4fv(mWorldUniformLocation, gl.FALSE, mWorld);
         gl.uniformMatrix4fv(mViewUniformLocation, gl.FALSE, mView);
         gl.uniformMatrix4fv(mProjUniformLocation, gl.FALSE, mProj);
-        gl.drawArrays(gl.TRIANGLES, 0, TRI_VTX.length/5);// 0 skip, 3*8 vertexes
+        
+        gl.drawArrays(gl.TRIANGLES, 0, TRI_VTX.length/5);// 0 skip
         
         requestAnimationFrame(loop);
     };
@@ -261,6 +265,6 @@ function physikLoop() {
 }
 
 onmousemove = function(e) {
-    cam.ctrlRot1(-RM_SPEED*e.movementX);
-    cam.ctrlRot2(-RM_SPEED*e.movementY);  
+    cam.ctrlRot1(-RM_SPEED*e.movementX* (isKeyPressed(KEY_ZOOM) ? 0.1 : 1));
+    cam.ctrlRot2(-RM_SPEED*e.movementY* (isKeyPressed(KEY_ZOOM) ? 0.1 : 1));  
 }
