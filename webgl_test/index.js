@@ -1,5 +1,5 @@
 // code geklaut von https://www.youtube.com/playlist?list=PLjcVFFANLS5zH_PeKC6I8p0Pt1hzph_rt
-const SPEED = 1;
+const SPEED = 0.2;
 const R_SPEED = 0.01;
 const RM_SPEED = 0.002;
 
@@ -15,7 +15,7 @@ const KEY_R_DOWN = 40;
 const KEY_R_RIGHT = 39;
 
 const TEXTURE = new Image();
-TEXTURE.src = "textorus.png";
+TEXTURE.src = "landschaft.png";
 
 
 class Cam {
